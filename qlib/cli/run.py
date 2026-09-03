@@ -10,7 +10,7 @@ from jinja2 import Template, meta
 from ruamel.yaml import YAML
 
 import qlib
-from qlib.config import C
+from qlib.config import C, get_default_mlflow_uri
 from qlib.log import get_module_logger
 from qlib.model.trainer import task_train
 from qlib.utils import set_log_with_config
@@ -139,7 +139,11 @@ def workflow(config_path, experiment_name="workflow", uri_folder="mlruns"):
         qlib.init(**config.get("qlib_init"))
     else:
         exp_manager = C["exp_manager"]
-        exp_manager["kwargs"]["uri"] = "file:" + str(Path(os.getcwd()).resolve() / uri_folder)
+        tracking_path = Path(os.getcwd()).resolve() / uri_folder
+        if tracking_path.suffix.lower() not in {".db", ".sqlite"}:
+            tracking_path = tracking_path.with_suffix(".db")
+        tracking_path.parent.mkdir(parents=True, exist_ok=True)
+        exp_manager["kwargs"]["uri"] = get_default_mlflow_uri(tracking_path)
         qlib.init(**config.get("qlib_init"), exp_manager=exp_manager)
 
     if "experiment_name" in config:

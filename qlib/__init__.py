@@ -266,7 +266,7 @@ def auto_init(**kwargs):
                 class: "MLflowExpManager"
                 module_path: "qlib.workflow.expm"
                 kwargs:
-                    uri: "file://<your mlflow experiment path>"
+                    uri: "sqlite:///<your mlflow database path>"
                     default_exp_name: "Experiment"
 
     Example 2)
@@ -278,7 +278,7 @@ def auto_init(**kwargs):
             class: "MLflowExpManager"
             module_path: "qlib.workflow.expm"
             kwargs:
-                uri: "file://<your mlflow experiment path>"
+                uri: "sqlite:///<your mlflow database path>"
                 default_exp_name: "Experiment"
 
     """

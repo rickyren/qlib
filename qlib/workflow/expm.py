@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 import mlflow
 from filelock import FileLock
 from mlflow.exceptions import MlflowException, RESOURCE_ALREADY_EXISTS, ErrorCode
@@ -319,6 +319,30 @@ class MLflowExpManager(ExpManager):
     Use mlflow to implement ExpManager.
     """
 
+    def __init__(self, uri: Text, default_exp_name: Optional[Text], artifact_location: Optional[Text] = None) -> None:
+        super().__init__(uri=uri, default_exp_name=default_exp_name)
+        self.artifact_location = artifact_location
+
+    @staticmethod
+    def _default_artifact_location(uri: Text) -> Optional[Text]:
+        """Keep artifacts beside a local SQLite tracking database."""
+        prefix = "sqlite:///"
+        if not uri.startswith(prefix):
+            return None
+
+        database = unquote(uri[len(prefix) :].split("?", maxsplit=1)[0])
+        if database == ":memory:":
+            return None
+
+        database_path = Path(database).expanduser().resolve()
+        artifact_path = (
+            database_path.with_suffix("")
+            if database_path.suffix
+            else database_path.parent / f"{database_path.name}_artifacts"
+        )
+        artifact_path.mkdir(parents=True, exist_ok=True)
+        return artifact_path.as_uri()
+
     @property
     def client(self):
         # Please refer to `tests/dependency_tests/test_mlflow.py::MLflowTest::test_creating_client`
@@ -354,7 +378,8 @@ class MLflowExpManager(ExpManager):
         assert experiment_name is not None
         # init experiment
         try:
-            experiment_id = self.client.create_experiment(experiment_name)
+            artifact_location = self.artifact_location or self._default_artifact_location(self.uri)
+            experiment_id = self.client.create_experiment(experiment_name, artifact_location=artifact_location)
         except MlflowException as e:
             if e.error_code == ErrorCode.Name(RESOURCE_ALREADY_EXISTS):
                 raise ExpAlreadyExistError() from e
