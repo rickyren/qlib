@@ -47,6 +47,9 @@ dependencies = [
   "lightgbm",
   "gym",
   "cvxpy",
+  # EnhancedIndexingOptimizer explicitly selects cp.ECOS. CVXPY no longer
+  # installs ECOS as a default dependency, so keep the solver in Qlib's runtime.
+  "ecos",
   "joblib",
   "matplotlib",
   "jupyter",
