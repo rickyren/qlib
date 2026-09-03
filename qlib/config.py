@@ -13,7 +13,6 @@ Two modes are supported
 
 from __future__ import annotations
 
-import os
 import re
 import copy
 import logging
@@ -31,8 +30,14 @@ if TYPE_CHECKING:
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+def get_default_mlflow_uri(path: Optional[Union[str, Path]] = None) -> str:
+    """Return a local SQLite tracking URI supported by current MLflow releases."""
+    database_path = Path.cwd() / "mlruns.db" if path is None else Path(path)
+    return "sqlite:///" + database_path.expanduser().resolve().as_posix()
+
+
 class MLflowSettings(BaseSettings):
-    uri: str = "file:" + str(Path(os.getcwd()).resolve() / "mlruns")
+    uri: str = get_default_mlflow_uri()
     default_exp_name: str = "Experiment"
 
 

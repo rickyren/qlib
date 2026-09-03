@@ -7,9 +7,17 @@ import time
 from pathlib import Path
 import shutil
 
+from qlib.config import get_default_mlflow_uri
+
 
 class MLflowTest(unittest.TestCase):
-    TMP_PATH = Path("./.mlruns_tmp/")
+    TMP_PATH = Path("./.mlruns_client_tmp/")
+
+    def setUp(self) -> None:
+        self.TMP_PATH.mkdir(parents=True, exist_ok=True)
+        self.uri = get_default_mlflow_uri(self.TMP_PATH / "mlflow.db")
+        # Exclude one-time database initialization from the client creation benchmark.
+        mlflow.tracking.MlflowClient(tracking_uri=self.uri)
 
     def tearDown(self) -> None:
         if self.TMP_PATH.exists():
@@ -24,7 +32,7 @@ class MLflowTest(unittest.TestCase):
         """
         start = time.time()
         for i in range(10):
-            _ = mlflow.tracking.MlflowClient(tracking_uri=str(self.TMP_PATH))
+            _ = mlflow.tracking.MlflowClient(tracking_uri=self.uri)
         end = time.time()
         elapsed = end - start
         if platform.system() == "Linux":

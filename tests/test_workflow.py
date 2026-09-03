@@ -5,13 +5,13 @@ from pathlib import Path
 import shutil
 
 from qlib.workflow import R
+from qlib.config import get_default_mlflow_uri
 from qlib.tests import TestAutoData
 
 
 class WorkflowTest(TestAutoData):
-    # Creating the directory manually doesn't work with mlflow,
-    # so we add a subfolder named .trash when we create the directory.
-    TMP_PATH = Path("./.mlruns_tmp/.trash")
+    TMP_PATH = Path("./.mlruns_workflow_tmp")
+    URI = get_default_mlflow_uri(TMP_PATH / "mlflow.db")
 
     def tearDown(self) -> None:
         if self.TMP_PATH.exists():
@@ -21,12 +21,13 @@ class WorkflowTest(TestAutoData):
         """ """
         self.TMP_PATH.mkdir(parents=True, exist_ok=True)
 
-        with R.start(uri=str(self.TMP_PATH)):
-            pass
+        with R.start(uri=self.URI):
+            R.save_objects(local_dir_smoke="ok")
 
-        with R.uri_context(uri=str(self.TMP_PATH)):
+        with R.uri_context(uri=self.URI):
             resume_recorder = R.get_recorder()
-            resume_recorder.get_local_dir()
+            local_dir = Path(resume_recorder.get_local_dir())
+            self.assertIn(self.TMP_PATH.resolve(), local_dir.parents)
 
 
 if __name__ == "__main__":

@@ -99,7 +99,8 @@ test = [
   "baostock",
 ]
 analysis = [
-  "plotly",
+  # plotly 7 removed figure_factory.create_distplot, which Qlib reports still use.
+  "plotly<7",
   "statsmodels",
 ]
 client = [
