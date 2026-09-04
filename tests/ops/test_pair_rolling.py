@@ -43,6 +43,15 @@ def test_corr_preserves_zero_variance_nan_on_aligned_index():
     assert np.isfinite(result.loc[2:]).all()
 
 
+def test_corr_computes_zero_variance_guard_after_index_alignment():
+    left = pd.Series([100.0, 1.0, 1.000001], index=[0, 2, 3])
+    right = pd.Series([0.0, 0.0, 1.0, 2.0], index=[0, 1, 2, 3])
+
+    result = Corr(StaticExpression(left), StaticExpression(right), 3)._load_internal("gapped", 0, 3)
+
+    assert np.isnan(result.loc[3])
+
+
 def test_if_aligns_expression_branches_to_condition_index():
     condition = pd.Series([True, False, True], index=pd.RangeIndex(2, 5))
     left = pd.Series([10.0, 11.0, 12.0, 13.0, 14.0], index=pd.RangeIndex(0, 5))

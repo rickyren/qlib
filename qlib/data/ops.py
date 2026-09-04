@@ -1496,12 +1496,10 @@ class Corr(PairRolling):
         series_left = self.feature_left.load(instrument, start_index, end_index, *args)
         series_right = self.feature_right.load(instrument, start_index, end_index, *args)
         # PairRolling aligns partial Series by index, so keep the zero-variance mask on the same index.
-        left_zero_std = (
-            series_left.rolling(self.N, min_periods=1).std().abs().le(2e-05).reindex(res.index, fill_value=False)
-        )
-        right_zero_std = (
-            series_right.rolling(self.N, min_periods=1).std().abs().le(2e-05).reindex(res.index, fill_value=False)
-        )
+        series_left = series_left.reindex(res.index)
+        series_right = series_right.reindex(res.index)
+        left_zero_std = series_left.rolling(self.N, min_periods=1).std().abs().le(2e-05)
+        right_zero_std = series_right.rolling(self.N, min_periods=1).std().abs().le(2e-05)
         res.loc[left_zero_std | right_zero_std] = np.nan
         return res
 
