@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import multiprocessing
+from multiprocessing.context import BaseContext
 from multiprocessing.sharedctypes import Synchronized
 import os
 import threading
@@ -19,6 +20,12 @@ _logger = get_module_logger(__name__)
 T = TypeVar("T")
 
 __all__ = ["DataQueue"]
+
+
+def _identity(value: T) -> T:
+    """Return a value unchanged through a picklable DataLoader collate hook."""
+
+    return value
 
 
 class DataQueue(Generic[T]):
@@ -43,6 +50,11 @@ class DataQueue(Generic[T]):
         Concurrent workers for data-loading.
     queue_maxsize
         Maximum items to put into queue before it jams.
+    multiprocessing_context
+        Multiprocessing start method or context shared by the internal queue,
+        completion flag, and PyTorch data-loading workers. Consumers that use
+        ``spawn`` or ``forkserver`` must create their processes from the same
+        context.
 
     Examples
     --------
@@ -63,6 +75,7 @@ class DataQueue(Generic[T]):
         shuffle: bool = True,
         producer_num_workers: int = 0,
         queue_maxsize: int = 0,
+        multiprocessing_context: str | BaseContext | None = None,
     ) -> None:
         if queue_maxsize == 0:
             if os.cpu_count() is not None:
@@ -77,11 +90,19 @@ class DataQueue(Generic[T]):
         self.shuffle: bool = shuffle
         self.producer_num_workers: int = producer_num_workers
 
+        if multiprocessing_context is None or isinstance(multiprocessing_context, str):
+            context = multiprocessing.get_context(multiprocessing_context)
+        elif isinstance(multiprocessing_context, BaseContext):
+            context = multiprocessing_context
+        else:
+            raise TypeError("multiprocessing_context must be a start-method name, context, or None")
+        self._multiprocessing_context = context.get_start_method()
+
         self._activated: bool = False
-        self._queue: multiprocessing.Queue = multiprocessing.Queue(maxsize=queue_maxsize)
+        self._queue: multiprocessing.Queue = context.Queue(maxsize=queue_maxsize)
         # Mypy 0.981 brought '"SynchronizedBase[Any]" has no attribute "value"  [attr-defined]' bug.
         # Therefore, add this type casting to pass Mypy checking.
-        self._done = cast(Synchronized, multiprocessing.Value("i", 0))
+        self._done = cast(Synchronized, context.Value("i", 0))
 
     def __enter__(self) -> DataQueue:
         self.activate()
@@ -174,7 +195,8 @@ class DataQueue(Generic[T]):
                 batch_size=None,
                 num_workers=self.producer_num_workers,
                 shuffle=self.shuffle,
-                collate_fn=lambda t: t,  # identity collate fn
+                collate_fn=_identity,
+                multiprocessing_context=(self._multiprocessing_context if self.producer_num_workers > 0 else None),
             )
             repeat = 10**18 if self.repeat == -1 else self.repeat
             for _rep in range(repeat):

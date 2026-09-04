@@ -29,11 +29,8 @@ def _worker(dataloader, collector):
         collector.put(len(data))
 
 
-def _queue_to_list(queue):
-    result = []
-    while not queue.empty():
-        result.append(queue.get())
-    return result
+def _queue_to_list(queue, expected_count):
+    return [queue.get(timeout=5.0) for _ in range(expected_count)]
 
 
 def test_pytorch_dataloader():
@@ -41,20 +38,37 @@ def test_pytorch_dataloader():
     dataloader = DataLoader(dataset, batch_size=None, num_workers=1)
     queue = multiprocessing.Queue()
     _worker(dataloader, queue)
-    assert len(set(_queue_to_list(queue))) == 100
+    assert len(set(_queue_to_list(queue, 100))) == 100
+    queue.close()
+    queue.join_thread()
 
 
 def test_multiprocess_shared_dataloader():
+    context = multiprocessing.get_context("spawn")
     dataset = DummyDataset(100)
-    with DataQueue(dataset, producer_num_workers=1) as data_queue:
-        queue = multiprocessing.Queue()
-        processes = []
-        for _ in range(3):
-            processes.append(multiprocessing.Process(target=_worker, args=(data_queue, queue)))
-            processes[-1].start()
-        for p in processes:
-            p.join()
-        assert len(set(_queue_to_list(queue))) == 100
+    queue = context.Queue()
+    processes = []
+    try:
+        with DataQueue(dataset, producer_num_workers=1, multiprocessing_context=context) as data_queue:
+            try:
+                for _ in range(3):
+                    processes.append(context.Process(target=_worker, args=(data_queue, queue)))
+                    processes[-1].start()
+                deadline = time.monotonic() + 30.0
+                for process in processes:
+                    process.join(timeout=max(0.0, deadline - time.monotonic()))
+                assert all(not process.is_alive() for process in processes)
+                assert all(process.exitcode == 0 for process in processes)
+                assert len(set(_queue_to_list(queue, 100))) == 100
+            finally:
+                for process in processes:
+                    if process.is_alive():
+                        process.terminate()
+                for process in processes:
+                    process.join(timeout=5.0)
+    finally:
+        queue.close()
+        queue.join_thread()
 
 
 def test_exit_on_crash_finite():
