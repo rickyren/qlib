@@ -193,6 +193,37 @@ class Fillna(Processor):
         return df
 
 
+def _assign_normalized_columns(df, columns, values, ignore):
+    """Assign normalized values while preserving compatible legacy dtypes."""
+    for position, column in enumerate(columns):
+        if ignore[position]:
+            continue
+
+        column_values = values[:, position]
+        if column_values.size == 0:
+            continue
+
+        try:
+            original_dtype = np.dtype(df[column].dtype)
+        except TypeError:
+            original_dtype = None
+
+        if original_dtype is not None and np.issubdtype(original_dtype, np.floating):
+            candidate = column_values.astype(original_dtype, copy=False)
+            if np.array_equal(column_values, candidate.astype(column_values.dtype), equal_nan=True):
+                column_values = candidate
+        elif original_dtype is not None and np.issubdtype(original_dtype, np.integer):
+            finite = np.isfinite(column_values).all()
+            integral = finite and np.equal(column_values, np.trunc(column_values)).all()
+            if integral:
+                bounds = np.iinfo(original_dtype)
+                within_bounds = column_values.min() >= bounds.min and column_values.max() <= bounds.max
+                if within_bounds:
+                    column_values = column_values.astype(original_dtype, copy=False)
+
+        df[column] = column_values
+
+
 class MinMaxNorm(Processor):
     def __init__(self, fit_start_time, fit_end_time, fields_group=None):
         # NOTE: correctly set the `fit_start_time` and `fit_end_time` is very important !!!
@@ -221,7 +252,7 @@ class MinMaxNorm(Processor):
         def normalize(x, min_val=self.min_val, max_val=self.max_val):
             return (x - min_val) / (max_val - min_val)
 
-        df.loc(axis=1)[self.cols] = normalize(df[self.cols].values)
+        _assign_normalized_columns(df, self.cols, normalize(df[self.cols].values), self.ignore)
         return df
 
 
@@ -255,7 +286,7 @@ class ZScoreNorm(Processor):
         def normalize(x, mean_train=self.mean_train, std_train=self.std_train):
             return (x - mean_train) / std_train
 
-        df.loc(axis=1)[self.cols] = normalize(df[self.cols].values)
+        _assign_normalized_columns(df, self.cols, normalize(df[self.cols].values), self.ignore)
         return df
 
 
