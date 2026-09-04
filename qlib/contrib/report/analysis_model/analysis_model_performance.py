@@ -116,6 +116,16 @@ def _plot_qq(data: pd.Series = None, dist=stats.norm) -> go.Figure:
     return fig
 
 
+def _full_year_month_index(first_year: int, last_year: int) -> pd.MultiIndex:
+    return pd.MultiIndex.from_product(
+        [
+            [str(year) for year in range(first_year, last_year + 1)],
+            [f"{month:02d}" for month in range(1, 13)],
+        ],
+        names=["year", "month"],
+    )
+
+
 def _pred_ic(
     pred_label: pd.DataFrame = None, methods: Sequence[Literal["IC", "Rank IC"]] = ("IC", "Rank IC"), **kwargs
 ) -> tuple:
@@ -153,20 +163,9 @@ def _pred_ic(
         names=["year", "month"],
     )
 
-    # fill month
-    _month_list = pd.date_range(
-        start=pd.Timestamp(f"{_index.min()[:4]}0101"),
-        end=pd.Timestamp(f"{_index.max()[:4]}1231"),
-        freq="1M",
-    )
-    _years = []
-    _month = []
-    for _date in _month_list:
-        _date = _date.strftime("%Y%m%d")
-        _years.append(_date[:4])
-        _month.append(_date[4:6])
-
-    fill_index = pd.MultiIndex.from_arrays([_years, _month], names=["year", "month"])
+    # Fill every month in every represented year without relying on pandas
+    # offset aliases, which differ between pandas 1.x and 3.x.
+    fill_index = _full_year_month_index(int(_index.min()[:4]), int(_index.max()[:4]))
 
     _monthly_ic = _monthly_ic.reindex(fill_index)
 
