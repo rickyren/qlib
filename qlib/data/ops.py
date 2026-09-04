@@ -661,10 +661,14 @@ class If(ExpressionOps):
         series_cond = self.condition.load(instrument, start_index, end_index, *args)
         if isinstance(self.feature_left, (Expression,)):
             series_left = self.feature_left.load(instrument, start_index, end_index, *args)
+            if isinstance(series_left, pd.Series):
+                series_left = series_left.reindex(series_cond.index)
         else:
             series_left = self.feature_left
         if isinstance(self.feature_right, (Expression,)):
             series_right = self.feature_right.load(instrument, start_index, end_index, *args)
+            if isinstance(series_right, pd.Series):
+                series_right = series_right.reindex(series_cond.index)
         else:
             series_right = self.feature_right
         series = pd.Series(np.where(series_cond, series_left, series_right), index=series_cond.index)
@@ -1491,10 +1495,14 @@ class Corr(PairRolling):
         # NOTE: Load uses MemCache, so calling load again will not cause performance degradation
         series_left = self.feature_left.load(instrument, start_index, end_index, *args)
         series_right = self.feature_right.load(instrument, start_index, end_index, *args)
-        res.loc[
-            np.isclose(series_left.rolling(self.N, min_periods=1).std(), 0, atol=2e-05)
-            | np.isclose(series_right.rolling(self.N, min_periods=1).std(), 0, atol=2e-05)
-        ] = np.nan
+        # PairRolling aligns partial Series by index, so keep the zero-variance mask on the same index.
+        left_zero_std = (
+            series_left.rolling(self.N, min_periods=1).std().abs().le(2e-05).reindex(res.index, fill_value=False)
+        )
+        right_zero_std = (
+            series_right.rolling(self.N, min_periods=1).std().abs().le(2e-05).reindex(res.index, fill_value=False)
+        )
+        res.loc[left_zero_std | right_zero_std] = np.nan
         return res
 
 
