@@ -5,23 +5,24 @@ working in the upstream `microsoft/qlib` repository: upstream owns its own
 support matrix and merge requirements.
 
 This fork is immutable source infrastructure for a macOS 15 Intel / Python
-3.14 application. Pull requests therefore run only the two source gates that
-match that environment:
+3.14 application. Pull requests therefore run one source gate that matches that
+environment:
 
 - `test_qlib_from_source.yml` for lint, configuration smoke tests, and the
-  non-slow test suite;
-- `test_qlib_from_source_slow.yml` for slow tests.
+  non-slow test suite.
 
-Both gates install the fork runtime plus only the tools needed by that gate.
-They intentionally exclude the inherited `docs`, `package`, and `rl` extras,
-which are not part of the application runtime; in particular, the upstream
-documentation-only SciPy pin does not support Python 3.14.
+The gate installs the fork runtime plus only the tools it needs. It
+intentionally excludes the inherited `docs`, `package`, and `rl` extras, which
+are not part of the application runtime; in particular, the upstream
+documentation-only SciPy pin does not support Python 3.14 and PyTorch does not
+publish a Python 3.14 Intel macOS wheel.
 
-`test_qlib_from_pip.yml` is manual-only because the application installs this
-fork from a pinned Git revision rather than from PyPI. `release.yml` is also
-manual-only; merging to the fork's `main` never publishes a package or starts a
-release compatibility matrix. The inherited stale-issue workflow is manual-only
-as well. The source gates run on pull requests, not again after the squash merge.
+`test_qlib_from_source_slow.yml` and `test_qlib_from_pip.yml` are manual-only;
+the application neither uses the inherited slow/RL coverage as a product gate
+nor installs Qlib from PyPI. `release.yml` is also manual-only; merging to the
+fork's `main` never publishes a package or starts a release compatibility
+matrix. The inherited stale-issue workflow is manual-only as well. The source
+gate runs on pull requests, not again after the squash merge.
 
 The application's local macOS virtual environment is the final runtime
 authority. If a fork change is proposed back to `microsoft/qlib`, validate it

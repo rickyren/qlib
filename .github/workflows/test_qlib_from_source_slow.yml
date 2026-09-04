@@ -5,8 +5,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
 
 on:
-  pull_request:
-    branches: [ main ]
+  # Slow upstream coverage is available for an explicit fork diagnostic, but
+  # is not a gate for the application runtime.
+  workflow_dispatch:
 
 jobs:
   build:
