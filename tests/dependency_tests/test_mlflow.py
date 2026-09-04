@@ -3,25 +3,29 @@
 import unittest
 import platform
 import mlflow
+import os
 import time
 from pathlib import Path
 import shutil
+import tempfile
+from unittest.mock import patch
+
+from sqlalchemy.pool import NullPool
 
 from qlib.config import get_default_mlflow_uri
 
 
 class MLflowTest(unittest.TestCase):
-    TMP_PATH = Path("./.mlruns_client_tmp/")
-
     def setUp(self) -> None:
-        self.TMP_PATH.mkdir(parents=True, exist_ok=True)
-        self.uri = get_default_mlflow_uri(self.TMP_PATH / "mlflow.db")
+        self._poolclass = patch.dict(os.environ, {"MLFLOW_SQLALCHEMYSTORE_POOLCLASS": "NullPool"})
+        self._poolclass.start()
+        self.addCleanup(self._poolclass.stop)
+        self.tmp_path = Path(tempfile.mkdtemp(prefix="qlib-mlruns-client-"))
+        self.addCleanup(shutil.rmtree, self.tmp_path)
+        self.uri = get_default_mlflow_uri(self.tmp_path / "mlflow.db")
         # Exclude one-time database initialization from the client creation benchmark.
-        mlflow.tracking.MlflowClient(tracking_uri=self.uri)
-
-    def tearDown(self) -> None:
-        if self.TMP_PATH.exists():
-            shutil.rmtree(self.TMP_PATH)
+        client = mlflow.tracking.MlflowClient(tracking_uri=self.uri)
+        self.assertIsInstance(client._tracking_client.store.engine.pool, NullPool)
 
     def test_creating_client(self):
         """

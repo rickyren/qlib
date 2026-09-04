@@ -78,10 +78,12 @@ class TimeUtils(TestCase):
         # test the correctness of the code
         random_n = 1000
         regions = [REG_CN, REG_US, REG_TW]
+        sample_minutes = (1, 2, 3, 4, 5, 6)
+        rng = np.random.default_rng(seed=0)
 
         def gen_args(cal: List):
-            for time in np.random.choice(cal, size=random_n, replace=True):
-                sam_minutes = np.random.choice([1, 2, 3, 4, 5, 6])
+            for time in rng.choice(cal, size=random_n, replace=True):
+                sam_minutes = int(rng.choice(sample_minutes))
                 dt = pd.Timestamp(
                     datetime(
                         2021,
@@ -93,8 +95,11 @@ class TimeUtils(TestCase):
                         microsecond=time.microsecond,
                     )
                 )
-                args = dt, sam_minutes
-                yield args
+                yield dt, sam_minutes
+
+        afternoon = pd.Timestamp("2021-03-03 14:18:00")
+        assert cal_sam_minute(afternoon, 2, REG_CN) == afternoon
+        assert cal_sam_minute_new(afternoon, 2, region=REG_CN) == afternoon
 
         for region in regions:
             cal_time = get_min_cal(region=region)
