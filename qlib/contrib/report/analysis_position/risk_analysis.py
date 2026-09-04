@@ -99,9 +99,13 @@ def _get_monthly_analysis_with_feature(monthly_df: pd.DataFrame, feature: str = 
     :param feature:
     :return:
     """
-    _monthly_df_gp = monthly_df.reset_index().groupby(["level_1"], group_keys=False)
+    if monthly_df.empty or not isinstance(monthly_df.index, pd.MultiIndex) or monthly_df.index.nlevels < 2:
+        return pd.DataFrame()
+    feature_mask = monthly_df.index.get_level_values(1) == feature
+    if not feature_mask.any():
+        return pd.DataFrame()
 
-    _name_df = _monthly_df_gp.get_group(feature).set_index(["level_0", "level_1"])
+    _name_df = monthly_df.loc[feature_mask]
     _temp_df = _name_df.pivot_table(index="date", values=["risk"], columns=_name_df.index)
     _temp_df.columns = map(lambda x: "_".join(x[-1]), _temp_df.columns)
     _temp_df.index = _temp_df.index.strftime("%Y-%m")
@@ -152,6 +156,8 @@ def _get_monthly_risk_analysis_figure(report_normal_df: pd.DataFrame) -> Iterabl
 
     for _feature in ["annualized_return", "max_drawdown", "information_ratio", "std"]:
         _temp_df = _get_monthly_analysis_with_feature(_monthly_df, _feature)
+        if _temp_df.empty:
+            continue
         yield ScatterGraph(
             _temp_df,
             layout=dict(title=_feature, xaxis=dict(type="category", tickangle=45)),

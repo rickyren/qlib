@@ -23,13 +23,16 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '16'
+          node-version: "22.22.0"
 
       - name: Install commitlint
-        run: npm install --save-dev @commitlint/{config-conventional,cli}
+        run: |
+          npm install --no-save --package-lock=false \
+            @commitlint/cli@21.2.2 \
+            @commitlint/config-conventional@21.2.2
 
       - name: Validate PR Title with commitlint
         env:
           BODY: ${{ github.event.pull_request.title }}
         run: |
-          echo "$BODY" | npx commitlint --config .commitlintrc.js
+          echo "$BODY" | npx --no-install commitlint --config .commitlintrc.js

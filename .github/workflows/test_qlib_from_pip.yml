@@ -42,6 +42,14 @@ jobs:
       run: |
         python -m pip install pyqlib
 
+    - name: Use stable OSQP on Windows Python 3.8
+      # Current OSQP/QDLDL cp38 Windows wheels crash during pytest collection on hosted runners.
+      # Remove these pins after fixed OSQP/QDLDL wheels are available or Python 3.8 support ends.
+      if: ${{ matrix.os == 'windows-latest' && matrix.python-version == '3.8' }}
+      run: |
+        python -m pip install "osqp==0.6.7.post3" "qdldl==0.1.7.post4"
+        python -c "import cvxpy, osqp, qdldl; assert osqp.__version__ == '0.6.7.post3'; print(cvxpy.__version__, osqp.__version__, qdldl.__file__)"
+
     - name: Install Lightgbm for MacOS
       if: ${{ matrix.os == 'macos-14' || matrix.os == 'macos-15' }}
       run: |
@@ -56,5 +64,9 @@ jobs:
         cd qlib
 
     - name: Test workflow by config
+      # The released pyqlib 0.9.7 qrun still selects MLflow's legacy FileStore.
+      # Remove this bridge after PyPI publishes Qlib's SQLite-default runtime fix.
+      env:
+        MLFLOW_ALLOW_FILE_STORE: "true"
       run: |
         qrun examples/benchmarks/LightGBM/workflow_config_lightgbm_Alpha158.yaml
