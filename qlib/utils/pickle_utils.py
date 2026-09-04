@@ -11,7 +11,6 @@ import io
 import pickle
 from typing import Any, BinaryIO, Set, Tuple
 
-
 _PYARROW_STRING_TYPE_ALIASES = {"string", "large_string"}
 # Serialized Arrow state is untrusted.  Exact type checks intentionally reject
 # bool-as-int coercion and subclasses with custom behavior.
