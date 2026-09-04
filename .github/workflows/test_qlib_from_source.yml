@@ -16,10 +16,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # This fork is the pinned infra for a macOS/Python 3.14 application.
+        # This fork is the pinned infra for a macOS Intel/Python 3.14 application.
         # Cross-platform compatibility remains the responsibility of upstream
         # when a change is proposed back to microsoft/qlib.
-        os: [macos-15]
+        os: [macos-15-intel]
         python-version: ["3.14"]
 
     steps:

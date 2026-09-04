@@ -16,9 +16,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # Keep the fork's slow gate aligned with its only supported deployment
-        # environment. Upstream owns broader release compatibility.
-        os: [macos-15]
+        # Keep the fork's slow gate aligned with its only supported macOS Intel
+        # deployment environment. Upstream owns broader release compatibility.
+        os: [macos-15-intel]
         python-version: ["3.14"]
 
     steps:

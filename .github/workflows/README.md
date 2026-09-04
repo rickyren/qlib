@@ -4,9 +4,9 @@ This note is for maintainers of `rickyren/qlib`. Stop reading if you are
 working in the upstream `microsoft/qlib` repository: upstream owns its own
 support matrix and merge requirements.
 
-This fork is immutable source infrastructure for a macOS 15 / Python 3.14
-application. Pull requests therefore run only the two source gates that match
-that environment:
+This fork is immutable source infrastructure for a macOS 15 Intel / Python
+3.14 application. Pull requests therefore run only the two source gates that
+match that environment:
 
 - `test_qlib_from_source.yml` for lint, configuration smoke tests, and the
   non-slow test suite;
