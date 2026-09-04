@@ -1,8 +1,8 @@
 name: Mark stale issues and pull requests
 
 on:
-  schedule:
-  - cron: "0 0/3 * * *"
+  # The fork does not run upstream issue-maintenance automation on a schedule.
+  workflow_dispatch:
 
 jobs:
   stale:

@@ -5,8 +5,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
     branches: [ main ]
 
@@ -18,11 +16,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-24.04, ubuntu-22.04, macos-14, macos-15]
-        # In github action, using python 3.7, pip install will not match the latest version of the package.
-        # Also, python 3.7 is no longer supported from macos-14, and will be phased out from macos-13 in the near future.
-        # All things considered, we have removed python 3.7.
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        # This fork is the pinned infra for a macOS/Python 3.14 application.
+        # Cross-platform compatibility remains the responsibility of upstream
+        # when a change is proposed back to microsoft/qlib.
+        os: [macos-15]
+        python-version: ["3.14"]
 
     steps:
     - name: Test qlib from source

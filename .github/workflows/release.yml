@@ -1,9 +1,9 @@
 name: Release
 
 on:
-  push:
-    branches:
-      - main
+  # This source-pinned fork does not publish on every merge. A maintainer must
+  # explicitly request a release build.
+  workflow_dispatch:
 
 permissions:
   contents: read
