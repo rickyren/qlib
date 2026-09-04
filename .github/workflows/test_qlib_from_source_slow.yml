@@ -59,6 +59,10 @@ jobs:
         python -m pip install --no-binary=:all: lightgbm
 
     - name: Unit tests with Pytest
+      # Slow compatibility tests explicitly exercise legacy file: experiment URIs.
+      # Remove after those fixtures migrate to SQLite or MLflow restores FileStore support.
+      env:
+        MLFLOW_ALLOW_FILE_STORE: "true"
       uses: nick-fields/retry@v2
       with:
         timeout_minutes: 240

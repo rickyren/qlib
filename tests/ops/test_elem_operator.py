@@ -62,7 +62,7 @@ class TestInstElementOperator(TestOperatorData):
     @pytest.mark.slow
     def test_abs(self):
         abs_values = self.data["abs"]
-        self.assertGreater(abs_values[2], 0)
+        self.assertGreater(abs_values.iloc[2], 0)
 
 
 if __name__ == "__main__":
