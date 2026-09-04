@@ -47,7 +47,7 @@ jobs:
         python -c "import cvxpy, osqp, qdldl; assert osqp.__version__ == '0.6.7.post3'; print(cvxpy.__version__, osqp.__version__, qdldl.__file__)"
 
     - name: Install Lightgbm for MacOS
-      if: ${{ matrix.os == 'macos-14' || matrix.os == 'macos-15' }}
+      if: ${{ matrix.os == 'macos-14' || matrix.os == 'macos-15' || matrix.os == 'macos-15-intel' }}
       run: |
         brew update
         brew install libomp || brew reinstall libomp

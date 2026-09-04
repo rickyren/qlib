@@ -50,7 +50,7 @@ jobs:
         python scripts/get_data.py qlib_data --name qlib_data_simple --target_dir ~/.qlib/qlib_data/cn_data --interval 1d --region cn
 
     - name: Install Lightgbm for MacOS
-      if: ${{ matrix.os == 'macos-14' || matrix.os == 'macos-15' }}
+      if: ${{ matrix.os == 'macos-14' || matrix.os == 'macos-15' || matrix.os == 'macos-15-intel' }}
       run: |
         brew update
         brew install libomp || brew reinstall libomp
